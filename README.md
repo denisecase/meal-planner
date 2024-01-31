@@ -1,6 +1,6 @@
 # Meal Planner
 
-Simple HTML5 app to build a list of meals from options.  Uses local browser storage only.
+Simple HTML5 app to build a list of meals from a list of favorite options.  Uses local browser storage only.
 
 ## Links
 
