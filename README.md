@@ -5,4 +5,4 @@ Simple HTML5 app to build a list of meals from a list of favorite options.  Uses
 ## Links
 
 - [App](https://denisecase.github.io/meal-planner/)
-- [Repo](https://github.com/denisecase/meal-plannert)
+- [Repo](https://github.com/denisecase/meal-planner)
