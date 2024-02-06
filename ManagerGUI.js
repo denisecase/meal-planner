@@ -4,7 +4,7 @@ const managerList = new ManagerList();
 // managerList.clearAllLocalStorage();
 
 document.addEventListener("DOMContentLoaded", function () {
-  initializeLists();
+  initialize();
   attachEventListeners();
 });
 
@@ -13,6 +13,8 @@ function attachEventListeners() {
   attachFormEventListeners();
   attachItemEventListeners();
   attachButtonEventListeners();
+  attachCheckboxEventListeners();
+  attachSortEventListeners();
 }
 
 function attachListEventListeners() {
@@ -34,11 +36,37 @@ function attachItemEventListeners() {
       handleItemDelete(e);
     }
   });
+
+  document.querySelectorAll(".draggable").forEach((list) => {
+    list.addEventListener("dblclick", (e) => {
+      if (e.target.tagName === "LI") {
+        handleItemEdit(e);
+      }
+    });
+  });
+
+  document.addEventListener("keyup", (e) => {
+    if (e.key === "Escape") {
+      if (e.target.tagName === "INPUT") {
+        const listItem = e.target.closest("li");
+        revertEditing(listItem);
+      }
+    }
+  });
 }
 
 function attachButtonEventListeners() {
   document.querySelector("#selected-clear").addEventListener("click", () => clearAll("selected"));
   document.querySelector("#option-clear").addEventListener("click", () => clearAll("option"));
+}
+
+function attachCheckboxEventListeners() {
+  const checkboxes = document.querySelectorAll("[type='checkbox']");
+  checkboxes.forEach((checkbox) => {
+    checkbox.addEventListener("change", function () {
+      localStorage.setItem(this.id, this.checked); // Store checkbox state in local storage
+    });
+  });
 }
 
 function clearAll(listName) {
@@ -47,11 +75,12 @@ function clearAll(listName) {
   localStorage.removeItem(`${listName}-items`);
 }
 
-function initializeLists() {
+function initialize() {
   const lists = ["selected", "option"];
   lists.forEach((listName) => {
     initializeList(listName);
   });
+  initializeCheckboxes();
 }
 
 function initializeList(listName) {
@@ -63,6 +92,57 @@ function initializeList(listName) {
     addListItem(listElement, itemText, itemId);
   });
   makeListDraggable(listName);
+}
+
+function initializeCheckboxes() {
+  const checkboxes = document.querySelectorAll("[type='checkbox']");
+  checkboxes.forEach((checkbox) => {
+    const storedState = localStorage.getItem(checkbox.id); // Get state from local storage
+    if (storedState) {
+      checkbox.checked = storedState === "true"; // Set state based on stored value
+    }
+  });
+}
+
+function handleItemEdit(e) {
+  e.stopPropagation();
+  const listItem = e.target;
+  // If already an input (don't nest inputs)
+  if (listItem.tagName.toLowerCase() === "input") {
+    return;
+  }
+  const currentText = listItem.textContent.replace(" X", ""); // Remove the delete button text
+  console.log('Current text:', currentText);
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = currentText;
+  input.addEventListener("blur", (e) => finishEditing(listItem, input.value));
+  input.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      finishEditing(listItem, input.value);
+    }
+  });
+
+  listItem.innerHTML = "";
+  listItem.appendChild(input);
+    // Delay focusing the input slightly
+    setTimeout(() => input.focus(), 0);
+}
+
+function finishEditing(listItem, newText) {
+  const listId = listItem.parentNode.id;
+  const listName = listId.split("-")[0];
+  newText = newText.trim();
+  if (newText === "") {
+    managerList.removeItemFromList(listName, listItem.id);
+    listItem.remove();
+  } else {
+    managerList.editItemInList(listName, listItem.id, newText);
+    listItem.innerHTML = `${newText} <span class="delete-btn">X</span>`;
+    attachItemEventListeners(); // Reattach listeners to newly added elements
+  }
+  location.reload();
 }
 
 function addListItem(listElement, itemText, itemId) {
@@ -118,7 +198,6 @@ function handleDragOver(e) {
   }
 }
 
-
 function handleDrop(e) {
   console.log("handleDrop called");
   e.preventDefault();
@@ -142,15 +221,18 @@ function finalizeDrop(listElement, draggedItem) {
   if (placeholder) {
     placeholder.remove();
   }
-  
-  // Redraw  list to reflect  new order
+  redrawListsIfNeeded(sourceListName, targetListName);
+  location.reload();
+}
+
+function redrawListsIfNeeded(sourceListName, targetListName) {
   if (sourceListName === targetListName) {
     initializeList(targetListName);
   } else {
-    // If items were moved between lists, reinitialize both
     initializeList(sourceListName);
     initializeList(targetListName);
   }
+  attachItemEventListeners();
 }
 
 function handleItemDelete(e) {
@@ -159,6 +241,8 @@ function handleItemDelete(e) {
   const listName = listId.split("-")[0];
   managerList.removeItemFromList(listName, listItem.id);
   listItem.remove();
+  location.reload();
+
 }
 
 function findNewPosition(listElement, placeholder) {
@@ -221,4 +305,42 @@ function updateDropPlaceholder(listElement, afterElement) {
     // in case the list is empty when this is called
     listElement.appendChild(placeholder);
   }
+}
+
+function attachSortEventListeners() {
+  document.querySelector("#selected-ascending").addEventListener("click", () => sortList("selected", true));
+  document.querySelector("#selected-descending").addEventListener("click", () => sortList("selected", false));
+  document.querySelector("#selected-no-duplicates").addEventListener("click", () => removeDuplicates("selected"));
+  document.querySelector("#option-ascending").addEventListener("click", () => sortList("option", true));
+  document.querySelector("#option-descending").addEventListener("click", () => sortList("option", false));
+  document.querySelector("#option-no-duplicates").addEventListener("click", () => removeDuplicates("option"));
+}
+
+function sortList(listId, isAscending) {
+  const list = document.querySelector(`#${listId}-list`);
+  const items = Array.from(list.querySelectorAll("li"));
+
+  items.sort((a, b) => {
+      const textA = a.textContent.trim();
+      const textB = b.textContent.trim();
+      return isAscending ? textA.localeCompare(textB) : textB.localeCompare(textA);
+  });
+
+  list.innerHTML = "";
+  items.forEach(item => list.appendChild(item));
+}
+
+function removeDuplicates(listId) {
+  const list = document.querySelector(`#${listId}-list`);
+  const items = Array.from(list.querySelectorAll("li"));
+  const seen = new Set(); // To track seen text content
+
+  items.forEach(item => {
+    const textContent = item.textContent.trim();
+    if (seen.has(textContent)) {
+      item.remove();
+    } else {
+      seen.add(textContent);
+    }
+  });
 }

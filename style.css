@@ -94,10 +94,10 @@ ul {
 
 ul li {
   position: relative;
-  padding: 10px;
+  padding: 2px;
   background: #f4f4f4;
   border: 1px solid #ddd;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   border-radius: 4px;
   transition: background 0.3s ease;
 }
@@ -164,4 +164,49 @@ button {
   border: 1px solid var(--theme-color);
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* Controls wrapper styles */
+.controls-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* Checkbox container styles */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+}
+
+/* Checkbox styles */
+.checkbox-style {
+  margin-right: 5px; /* Space between checkbox and label */
+  cursor: pointer;
+}
+
+/* Styles for the text next to checkbox */
+.checkbox-style + label {
+  cursor: pointer;
+}
+
+/* Button adjustments */
+.button-2 {
+  padding: 10px 15px; 
+}
+
+.sort-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  margin-left: 10px;
+  transition: color 0.3s ease; 
+
+}
+
+.sort-button:hover {
+  color: #007bff; 
 }
